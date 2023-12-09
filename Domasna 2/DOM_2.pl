@@ -113,11 +113,15 @@ sms(171717,[131313,161616]).
 
 najbroj(X,Y):- maxRazgovori(Tel), getImePrez(Tel,X,Y).
 
-maxRazgovori(Tel):-findall((T,N),brojPovici(T,N),[M|L]), maxRazgovori(L,M,Tel).
+%maxRazgovori(Tel) Tel e brojot koj napravil razgovori so najmnogu drugi broevi
+maxRazgovori(Tel):-findall((T,N),brojPovici(T,N),[M|L]), max(L,M,Tel).
 
-maxRazgovori([],(Tel,_),Tel):-!.
-maxRazgovori([(X,N)|L],(_,TempMax),Tel):- N>TempMax, maxRazgovori(L,(X,N),Tel).
-maxRazgovori([(_,N)|L],(TempX,TempMax),Tel):- N=<TempMax, maxRazgovori(L,(TempX,TempMax),Tel).
+%max(L,(TempX,TempMax),MaxX) MaxX e najgolem element vo L kade L se sostoi od (X,N) elementi 
+%kade N e svojstvo na X spored koe se bara najgolem, primer X e tel broj a N e broj na povici
+%(TempX,TempMax) e momentalniot najgolem element
+max([],(X,_),X):-!.
+max([(X,N)|L],(_,TempMax),Y):- N>TempMax, max(L,(X,N),Y).
+max([(_,N)|L],(TempX,TempMax),Y):- N=<TempMax, max(L,(TempX,TempMax),Y).
 
 %razgovor(T1,T2) True ako T1 i T2 imale telefonski razgovor
 razgovor(T1,T2):-povikan(T1,T2).
@@ -126,18 +130,162 @@ razgovor(T1,T2):-povikan(T2,T1).
 %povikan(Tel1,Tel2) True ako Tel2 go povikal Tel1
 povikan(T1,T2):- telefon(T2,_,_,L),clen(povik(T1,_),L).
     
-%brojPovici(T,N) N e brojot na povici kon i od T.
+%brojPovici(T,N) N e broj na tel broevi so koj T ima napraveno razgovor
 brojPovici(T,N):- setof(T2,razgovor(T,T2),L),dolzina(L,N).
 
 getImePrez(Tel,Ime,Prezime):-telefon(Tel,Ime,Prezime,_).
 
 
 %Task 2
+%omilen(X,Y)
+omilen(X,Y):- maxVremetraenjeRazgovori(X,Y).
+
+%maxVremetraenjeRazgovori(T1,T2) T2 e brojot so koj T1 ima ostvareno najgolemo vkupno traene na povici + sms
+maxVremetraenjeRazgovori(X,Y):-findall((T,N),vremetraenjeRazgovori(X,T,N),[M|L]), max(L,M,Y),!.
+
+%vremetraenjeRazgovori N e vkupno traene na povici + sms pomegu T1 i T2.
+vremetraenjeRazgovori(T1,T2,N):- 
+    vremetraenjePovici(T1,T2,N1), 
+    brojPoraki(T1,T2,N2),
+    N is N1 + 100*N2.
+
+%vremetraenjePovici N e vkupno traene na povici pomegu T1 i T2
+vremetraenjePovici(T1,T2,N):-
+    vremetraenjeDojdovni(T1,T2,N1),
+    vremetraenjeDojdovni(T2,T1,N2),
+    N is N1+N2.
+
+%vremetraenjePovici N e vkupno traene na dodjovni povici pomegu T1 i T2 (T2 go povikal T1)
+vremetraenjeDojdovni(T1,T2,N):- telefon(T2,_,_,L),clen(povik(T1,N),L).
+vremetraenjeDojdovni(T1,T2,0):- telefon(T2,_,_,L),not(clen(povik(T1,_),L)).
+
+%brojPoraki(T1,T2,N) N e brojot na poraki pomegu T1 i T2
+brojPoraki(T1,T2,N):-
+    brojPrimeniSMS(T1,T2,N1),
+    brojPrimeniSMS(T2,T1,N2),
+    N is N1+N2.
+
+%brojPrimeniSMS(T1,T2,N) N e brojot na poraki koj T1 gi primil od T2
+brojPrimeniSMS(T1,T2,N):- bagof(_,primenaSMS(T1,T2),L), dolzina(L,N).
+brojPrimeniSMS(T1,T2,0):- not(primenaSMS(T1,T2)).
+
+%primenaSMS(T1,T2) True ako T2 mu ispratil poraka na T1
+primenaSMS(T1,T2):- sms(T2,L), clen(T1,L).
 
 
+%ZAD 3
+%Data
+klient(1,petko,petkov,[usluga(a,b,50,datum(12,12,2015),23),usluga(c,a,50,datum(7,12,2015),34),usluga(c,f,40,datum(7,11,2015),23)]).
+klient(2,vasil,vasilev,[usluga(a,e,50,datum(25,12,2015),12),usluga(c,g,40,datum(17,11,2015),56),usluga(g,d,50,datum(17,12,2015),45),usluga(e,a,40,datum(24,12,2015),34)]).
+klient(3,krste,krstev,[usluga(c,b,60,datum(31,12,2015),56),usluga(e,f,60,datum(31,12,2015),34)]).
+klient(4,petar,petrov,[usluga(a,f,50,datum(25,12,2015),23),usluga(f,d,50,datum(25,12,2015),34)]).
+klient(5,ivan,ivanov,[usluga(d,g,50,datum(7,12,2015),56),usluga(g,e,40,datum(25,12,2015),34)]).
+klient(6,jovan,jovanov,[usluga(c,f,50,datum(5,12,2015),12),usluga(f,d,50,datum(27,12,2015),45)]).
+klient(7,ana,aneva,[usluga(e,d,50,datum(11,12,2015),12),usluga(d,g,50,datum(11,12,2015),12)]).
+klient(8,lidija,lideva,[usluga(e,g,50,datum(29,12,2015),45),usluga(f,b,50,datum(29,12,2015),34)]).
+rastojanie(a,b,4).
+rastojanie(a,c,7).
+rastojanie(b,c,5).
+rastojanie(b,d,3).
+rastojanie(c,d,4).
+rastojanie(b,e,6).
+rastojanie(c,e,2).
+rastojanie(b,f,8).
+rastojanie(e,f,5).
+rastojanie(f,g,3).
 
 
-    
-    
+%Task1
+%izbroj_lokacija(Lok,Br)
+izbroj_lokacija(Lok,Br):-
+    findall(_,(klient(_,_,_,U),clen(usluga(Lok,_,_,_,_),U)),L1),
+    findall(_,(klient(_,_,_,U),clen(usluga(_,Lok,_,_,_),U)),L2),
+    dolzina(L1,N1), dolzina(L2,N2), Br is N1+N2.
+
+
+%Task2
+%najmnogu_kilometri(X,Y).
+najmnogu_kilometri(X,Y):-
+    findall((S,N),pominatiKilometri(S,N),[M|L]),
+    max(L,M,K),
+    klient(K,X,Y,_),!.
+
+%pominatiKilometri(X,N) N e brojot na pominati kilometri na liceto X
+pominatiKilometri(X,N):-
+    klient(X,_,_,L),
+    pominatiKilometriR(L,N).
+
+%pominatiKilometriR(L,N). L e lista od usligi a N e vkupnoto rastojanie pomegu pocetnite i destinaciskite mesta
+pominatiKilometriR([],0).
+pominatiKilometriR([usluga(A,B,_,_,_)|L],N):-
+    pominatiKilometriR(L,Nr),
+    najkratokPat(A,B,P), N is Nr + P.
+
+%najkratokPat(A,B,N) N e najkratkoto rastojanie pomegu A i B.
+najkratokPat(A,B,N):-setof(R,pat(A,B,R),[N|_]).
+
+% D e rastojanieto pomegu A i B dokolku postoi direkten pat
+patDirekten(A,B,D):-rastojanie(A,B,D).
+patDirekten(A,B,D):-rastojanie(B,A,D).
+
+%True ako postoi pat od A do B so dolzina N (bez ciklusi) 
+pat(A,B,N):-najdiSiteMesta(L),
+    izbrisi(L,A,L2),
+    izbrisi(L2,B,L3),
+    pat(L3,A,B,N).
+
+pat(_,A,B,N):-patDirekten(A,B,N).
+pat(L,A,B,N):-
+    clen(C,L), izbrisi(L,C,L2),
+    pat(L2,A,C,N1),patDirekten(C,B,N2),N is N1 + N2.
+
+%najdiSiteMesta(L) gi vraka site mesta za koi ima rastojanie vo bazata na podatoci
+najdiSiteMesta(L):-
+    findall(A,rastojanie(A,_,_),La),
+    findall(B,rastojanie(_,B,_),Lb),
+    zalepi(La,Lb,Lab), izvadiDupli(Lab,L),!.
+
+%append
+zalepi([],L2,L2).
+zalepi([X|L1],L2,[X|L3]):-zalepi(L1,L2,L3).
+
+%izvadiDupli(L1,L2). L2 e L1 bez duplikati
+izvadiDupli([],[]).
+izvadiDupli([X|L1],L2):-clen(X,L1),izvadiDupli(L1,L2).
+izvadiDupli([X|L1],[X|L2]):-not(clen(X,L1)),izvadiDupli(L1,L2).
+
+%izbrisi(L1,X,L2). izbrisi gi site pojavuvanja na X vo L1 i rezultatot vrati go vo L2
+izbrisi([],_,[]).
+izbrisi([X|L1],X,L2):-izbrisi(L1,X,L2).
+izbrisi([X|L1],Y,[X|L2]):- X\==Y, izbrisi(L1,Y,L2).
+
+
+%Task3
+%najmnogu_zarabotil(X) 
+najmnogu_zarabotil(X):-
+    findall((T,N),zarabotil(T,N),[M|L]),
+    max(L,M,X),!.
+
+
+%zarabotil(T,N)  taksistot so vozilo broj T zarabotil N vo dekemvri 2015
+zarabotil(T,N):-
+	siteUslugi(L),
+	zarabotil(L,T,N).
+zarabotil([],_,0).
+zarabotil([usluga(A,B,C,datum(_,12,2015),T)|L],T,N):-
+    zarabotil(L,T,N1),
+    najkratokPat(A,B,P),
+    N is N1 + P*C.
+zarabotil([usluga(_,_,_,datum(_,M,God),Taxist)|L],T,N):-not((M\==12, God\==2015, Taxist\==T)),zarabotil(L,T,N).
+
+
+%siteUslugi(L)
+siteUslugi(L):-findall(U,klient(_,_,_,U),L2),izramniMatrica(L2,L).
+
+%izramniMatrica(L1,L2) L2 e izramneta L1 kade L1 e matrica
+izramniMatrica([],[]).
+izramniMatrica([X|L],L2):-izramniMatrica(L,L3), zalepi(X,L3,L2).
+
+
 
 
