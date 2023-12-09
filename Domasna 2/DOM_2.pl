@@ -54,19 +54,19 @@ dolzina([_|L],N):-dolzina(L,M), N is M+1.
 %predci(Sifra,L)
 predci(Sifra,L):-findall(P,predok_uslov(Sifra,P),L).
 
-%roditel(L,R) True ako R e roditel na L
-roditel(L,R):-familija(R,_,D),clen(L,D).
-roditel(L,R):-familija(_,R,D),clen(L,D).
-
-%predok(L,P) P e predok na L
-predok(L,P):-roditel(L,P).
-predok(L,P):-roditel(L,R),predok(R,P).
-
 %predok_uslov(L,P) P e predok na L, L i P se od ist pol i imaat blizok rodenden.
 predok_uslov(L,P):-predok(L,P),
     lice(L,_,_,Pol,LData,_,_),
     lice(P,_,_,Pol,PData,_,_),
     blizokRodenden(LData,PData).
+
+%predok(L,P) P e predok na L
+predok(L,P):-roditel(L,P).
+predok(L,P):-roditel(L,R),predok(R,P).
+
+%roditel(L,R) True ako R e roditel na L
+roditel(L,R):-familija(R,_,D),clen(L,D).
+roditel(L,R):-familija(_,R,D),clen(L,D).
 
 %blizokRodenden(Data1,Data2) Data1 i Data2 se razlikuvaat za edna nedela godinata e nebitna.
 blizokRodenden(datum(D1,M,_),datum(D2,M,_)):- D1>=D2,Raz=D1-D2, Raz=<7.
@@ -110,7 +110,6 @@ sms(171717,[131313,161616]).
 
 %Task 1
 %najbroj(X,Y)  X ime, Y prezime na brojot koj ostvaril najmnogu povici
-
 najbroj(X,Y):- maxRazgovori(Tel), getImePrez(Tel,X,Y).
 
 %maxRazgovori(Tel) Tel e brojot koj napravil razgovori so najmnogu drugi broevi
@@ -123,15 +122,15 @@ max([],(X,_),X):-!.
 max([(X,N)|L],(_,TempMax),Y):- N>TempMax, max(L,(X,N),Y).
 max([(_,N)|L],(TempX,TempMax),Y):- N=<TempMax, max(L,(TempX,TempMax),Y).
 
+%brojPovici(T,N) N e broj na tel broevi so koj T ima napraveno razgovor
+brojPovici(T,N):- setof(T2,razgovor(T,T2),L),dolzina(L,N).
+
 %razgovor(T1,T2) True ako T1 i T2 imale telefonski razgovor
 razgovor(T1,T2):-povikan(T1,T2).
 razgovor(T1,T2):-povikan(T2,T1).
 
 %povikan(Tel1,Tel2) True ako Tel2 go povikal Tel1
 povikan(T1,T2):- telefon(T2,_,_,L),clen(povik(T1,_),L).
-    
-%brojPovici(T,N) N e broj na tel broevi so koj T ima napraveno razgovor
-brojPovici(T,N):- setof(T2,razgovor(T,T2),L),dolzina(L,N).
 
 getImePrez(Tel,Ime,Prezime):-telefon(Tel,Ime,Prezime,_).
 
@@ -266,7 +265,6 @@ najmnogu_zarabotil(X):-
     findall((T,N),zarabotil(T,N),[M|L]),
     max(L,M,X),!.
 
-
 %zarabotil(T,N)  taksistot so vozilo broj T zarabotil N vo dekemvri 2015
 zarabotil(T,N):-
 	siteUslugi(L),
@@ -278,14 +276,9 @@ zarabotil([usluga(A,B,C,datum(_,12,2015),T)|L],T,N):-
     N is N1 + P*C.
 zarabotil([usluga(_,_,_,datum(_,M,God),Taxist)|L],T,N):-not((M\==12, God\==2015, Taxist\==T)),zarabotil(L,T,N).
 
-
-%siteUslugi(L)
+%siteUslugi(L) L e lista od site uslugi vo bazata na podatoci
 siteUslugi(L):-findall(U,klient(_,_,_,U),L2),izramniMatrica(L2,L).
 
 %izramniMatrica(L1,L2) L2 e izramneta L1 kade L1 e matrica
 izramniMatrica([],[]).
 izramniMatrica([X|L],L2):-izramniMatrica(L,L3), zalepi(X,L3,L2).
-
-
-
-
