@@ -49,11 +49,11 @@ dolzina([_|L],N):-dolzina(L,M), N is M+1.
 
 
 %ZAD 3
-proveri([A,B]):-B>A.
+proveri([A,B]):-B>A,!.
 proveri([A,B,C|Ostatok]):-proveri_uslov3([A,B,C|Ostatok]).
     
-proveri_uslov3([_]).
-proveri_uslov3([A,B]):-B>A.
+proveri_uslov3([_]):-!.
+proveri_uslov3([A,B]):-B>A,!.
 proveri_uslov3([A,B,C|Ostatok]):-B>A, C<B, proveri_uslov3([C|Ostatok]).
 
 
@@ -119,36 +119,27 @@ delenje(L1,L2,R):-
 
 %ZAD 6
 %presmetaj(M,R) vlez e matrica M a izlez e R dobieno kako M*M_transponirana
-%R_ij=X_i1*X_j1 + X_i2*X_j2 + X_i3*X_j3 + ...     
-%kade R_ij e pozicija i,j vo izleznata matrica R, X_ij e pozicija i,j vo vleznata matrica X
-presmetaj(M,R):-presmetaj(M,M,1,R),!.
+presmetaj(M,R):-
+    transponirana(M,T),
+    mnoziMatrici(M,T,R),!.
 
-%presmetaj(M,M,I,R). M e vleznata matrica, R e izleznata I e iterator po redici. 
-presmetaj(_,[],_,[]).
-presmetaj(M,[X|L],I,[Y|L2]):-
-    presmetajRed(M,X,I,1,Y),
+%transponirana(M,T) T e transponirana matrica M
+transponirana(M,T):-dolzina(M,N),transponirana(M,N,0,T).
+%transponirana(M,N,I,T) T e transponirana matrica M, I e itaraotr a N e dolzina na matricata
+transponirana(_,N,N,[]).
+transponirana(M,N,I,[R2|L2]):-
     I_new is I+1,
-    presmetaj(M,L,I_new,L2).
+    transponirajRed(M,N,I_new,0,R2),
+    transponirana(M,N,I_new,L2).
 
-%presmetajRed(М,L,I,J,R). M-vlezna matrica, L e I-tiot red vo matricata, a R e I-tiot red od rezultatnata matrica
-% J e iterator po koloni
-presmetajRed(_,[],_,_,[]).
-presmetajRed(M,[_|L1],I,J,[Y|L2]):-
-	presmetajKelija(M,M,I,J,1,Y),
+%transponirajRed(M,N,I,J,R) R e I-tiot red vo transponiranata matrica na M, J e iterator a N e dolzina na matrica
+transponirajRed(_,N,_,N,[]).
+transponirajRed(M,N,I,J,[Y|L]):-
     J_new is J+1,
-    presmetajRed(M,L1,I,J_new,L2).
+    clen_pozicija_matrica(M,J_new,I,Y),
+    transponirajRed(M,N,I,J_new,L).
 
-%presmetajKelija(M,M,I,J,Iterator,R). M e vleznata matrica,R kelija na pozicija (I,J) vo rezultantnata matrica 
-presmetajKelija(_,[],_,_,_,0).
-presmetajKelija(M,[_|L],I,J,Iterator,R):-
-    clen_pozicija_matrica(M,I,Iterator,X1),    
-    clen_pozicija_matrica(M,J,Iterator,X2),
-    P is X1 * X2,
-    Iterator_new is Iterator + 1,
-    presmetajKelija(M,L,I,J,Iterator_new,R2),
-    R is R2 + P.
-
-%clen_pozicija_matrica(M,I,J,X) X e elementot na pozicija I,J vo matricata X
+%clen_pozicija_matrica(M,I,J,X) X e elementot na pozicija I,J vo matricata M
 clen_pozicija_matrica([X|_],1,J,Y):-clen_pozicija(X,J,Y).
 clen_pozicija_matrica([_|L],I,J,X):-I_new is I-1,  clen_pozicija_matrica(L,I_new,J,X).
 
@@ -156,6 +147,32 @@ clen_pozicija_matrica([_|L],I,J,X):-I_new is I-1,  clen_pozicija_matrica(L,I_new
 clen_pozicija([X|_],1,X).
 clen_pozicija([_|L],I,X):-I_new is I-1, clen_pozicija(L,I_new,X).
 
+%mnoziMatrici(M1,M2,R) R e proizvod od kvadratnite matrici M1 i M2, raboti samo ako M1 i M2 se so isti dimenzii
+mnoziMatrici(M1,M2,R):-dolzina(M1,N),dolzina(M2,N), mnoziMatrici(M1,M2,N,0,R).
+%mnoziMatrici(M1,M2,N,I,R) R e proizvod od kvadratnite matrici M1 i M2, I e iterator a N e dolzinata na matricite
+mnoziMatrici(_,_,N,N,[]).
+mnoziMatrici(M1,M2,N,I,[Y|L]):-
+	I_new is I+1,
+    mnoziRed(M1,M2,N,I_new,0,Y),
+    mnoziMatrici(M1,M2,N,I_new,L).
+
+%mnoziRed(M1,M2,N,I,J,R) R e I-tiot red vo rezultatnata matrica pri mnozene na matricite M1 i M2, J e iterator
+mnoziRed(_,_,N,_,N,[]).
+mnoziRed(M1,M2,N,I,J,[Y|L]):-
+    J_new is J+1,
+    presmetajKelija(M1,M2,N,I,J_new,0,Y),
+    mnoziRed(M1,M2,N,I,J_new,L).
+
+%presmetajKelija(M1,M2,N,I,J,Iterator,R) R e kelija na pizicija (I,J) vo rezultatnata matrica pri M1*M2 
+presmetajKelija(_,_,N,_,_,N,0).
+presmetajKelija(M1,M2,N,I,J,Iterator,R):-
+    Iterator_new is Iterator+1,
+    clen_pozicija_matrica(M1,I,Iterator_new,X1),
+    clen_pozicija_matrica(M2,Iterator_new,J,X2),
+    P is X1 * X2,
+    presmetajKelija(M1,M2,N,I,J,Iterator_new,R2),
+    R is R2 + P.
+  
 
 %ZAD 7
 transform(L1,L2):-izbrisiDuplikati(L1,L3),sortiraj_podlisti(L3,L2),!. 
@@ -207,7 +224,7 @@ clen(X,[_|L]):-clen(X,L).
 
 %Zad 8
 %brisi_sekoe_vtoro(L,R) 
-brisi_sekoe_vtoro(L,R):-najdi_unikati(L,Unikati),brisi_sekoe_vtoro(L,Unikati,R).
+brisi_sekoe_vtoro(L,R):-najdi_unikati(L,Unikati),brisi_sekoe_vtoro(L,Unikati,R),!.
 
 brisi_sekoe_vtoro(L,[],L).
 brisi_sekoe_vtoro(L,[X|L2],R):-
