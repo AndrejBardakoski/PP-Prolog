@@ -1,0 +1,1 @@
+﻿#Prolog - logic programming paradigm
